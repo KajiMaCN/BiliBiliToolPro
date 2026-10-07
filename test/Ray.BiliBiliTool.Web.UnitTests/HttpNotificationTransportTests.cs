@@ -1,6 +1,7 @@
 using System.Net;
 using System.Reflection;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
+using Ray.Serilog.Sinks.Compatibility;
 using Serilog;
 
 namespace Ray.BiliBiliTool.Infrastructure.UnitTests;

@@ -9,7 +9,6 @@ using Ray.BiliBiliTool.Application.Contracts.Cookies;
 using Ray.BiliBiliTool.Config.Options;
 using Ray.BiliBiliTool.DomainService.Interfaces;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
@@ -107,7 +106,7 @@ public class LiveMedalMonitorSourceTests
                 )
                 .Build();
             Cookies = new(config);
-            var api = LiveTaskTestSupport.Proxy.Create<ILiveApi>(
+            var api = LiveFansMedalTaskTests.Proxy.Create<ILiveApi>(
                 (method, args) =>
                 {
                     Assert.Equal("GetLiveRoomInfo", method);
@@ -126,7 +125,7 @@ public class LiveMedalMonitorSourceTests
                     );
                 }
             );
-            var domain = LiveTaskTestSupport.Proxy.Create<ILiveDomainService>(
+            var domain = LiveFansMedalTaskTests.Proxy.Create<ILiveDomainService>(
                 (method, args) =>
                 {
                     Assert.Equal("RunFansMedalActionForAnchorAsync", method);

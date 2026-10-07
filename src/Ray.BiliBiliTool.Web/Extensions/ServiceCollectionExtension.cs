@@ -28,6 +28,16 @@ public static class ServiceCollectionExtension
         services.AddScoped<ILogsDialogWorkflow, LogsDialogWorkflow>();
         services.AddScoped<IHistoryDialogWorkflow, HistoryDialogWorkflow>();
         services.AddScoped<IBiliAccountPageWorkflow, BiliAccountPageWorkflow>();
+        services
+            .AddHttpClient<IBiliPasswordLoginService, BiliPasswordLoginService>(client =>
+            {
+                client.BaseAddress = new Uri("https://passport.bilibili.com");
+                client.Timeout = TimeSpan.FromSeconds(20);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new SocketsHttpHandler { UseCookies = false, AllowAutoRedirect = false }
+            )
+            .RemoveAllLoggers();
         services.AddScoped<
             ICookieNotificationSettingsWorkflow,
             CookieNotificationSettingsWorkflow

@@ -189,10 +189,17 @@ public interface IApiApi
     /// 分享视频
     /// </summary>
     /// <remarks>ck中必须要有buvid3，否则几率性-403</remarks>
-    [Headers("Origin: https://www.bilibili.com")]
+    [Headers("Origin: https://www.bilibili.com", "Referer: https://www.bilibili.com/")]
     [Post("/x/web-interface/share/add")]
     Task<BiliApiResponse> ShareVideo(
         [Body(BodySerializationMethod.UrlEncoded)] ShareVideoRequest request,
+        [Header("Cookie")] string ck
+    );
+
+    [Headers("Origin: https://www.bilibili.com", "Referer: https://www.bilibili.com/")]
+    [Post("/x/share/finish")]
+    Task<BiliApiResponse> CompleteVideoShare(
+        [Body(BodySerializationMethod.UrlEncoded)] ShareVideoCompletionRequest request,
         [Header("Cookie")] string ck
     );
 
@@ -253,10 +260,14 @@ public interface IApiApi
     Task<GetBangumiBySsidResponse> GetBangumiBySsid(long ssid, [Header("Cookie")] string ck);
 
     /// <summary>
-    /// 获取视频详情（不需要传递Cookie）
+    /// Gets video details with an explicit account cookie when available.
     /// </summary>
+    [Headers("Referer: https://www.bilibili.com/", "Origin: https://www.bilibili.com")]
     [Get("/x/web-interface/view?aid={aid}")]
-    Task<BiliApiResponse<VideoDetail>> GetVideoDetail(string aid);
+    Task<BiliApiResponse<VideoDetail>> GetVideoDetail(
+        string aid,
+        [Header("Cookie")] string? ck = null
+    );
 
     /// <summary>
     /// 获取排行榜

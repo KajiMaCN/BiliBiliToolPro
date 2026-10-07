@@ -14,4 +14,8 @@ public interface IBiliAccountPageWorkflow
     Task<QrLoginGenerateResult> QrLoginGenerateAsync();
     Task<QrLoginCheckResult> QrLoginPollAsync(string qrcodeKey);
     Task QrLoginCompleteAsync(BiliCookie rawCookie);
+    async Task PasswordLoginCompleteAsync(
+        BiliCookie rawCookie,
+        CancellationToken cancellationToken = default
+    ) => await QrLoginCompleteAsync(rawCookie);
 }

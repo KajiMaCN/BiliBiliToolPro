@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Ray.Serilog.Sinks.Compatibility</PackageId>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/RayWangQvQ/Ray.Serilog.Sinks</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Ray.Serilog.Sinks.Batched/Ray.Serilog.Sinks.Batched.csproj" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Ray.Serilog.Sinks.TelegramBatched" />
+    <PackageReference Include="Ray.Serilog.Sinks.WorkWeiXinBatched" />
+    <PackageReference Include="Ray.Serilog.Sinks.WorkWeiXinAppBatched" />
+  </ItemGroup>
+</Project>

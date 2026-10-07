@@ -4,7 +4,7 @@ public class SearchUpVideosResponse
 {
     public UpContent? List { get; set; }
 
-    public required BiliPageResult Page { get; set; }
+    public BiliPageResult? Page { get; set; }
 }
 
 public class UpContent

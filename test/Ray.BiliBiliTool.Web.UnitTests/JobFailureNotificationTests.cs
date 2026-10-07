@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Quartz;
 using Ray.BiliBiliTool.Application.Contracts;
 using Ray.BiliBiliTool.Web.Jobs;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

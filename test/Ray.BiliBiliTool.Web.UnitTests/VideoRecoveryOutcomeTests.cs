@@ -15,7 +15,6 @@ using Ray.BiliBiliTool.DomainService;
 using Ray.BiliBiliTool.DomainService.Dtos;
 using Ray.BiliBiliTool.DomainService.Interfaces;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
@@ -80,7 +79,7 @@ public class VideoRecoveryOutcomeTests
             ((Proxy)api).Call = method =>
                 method.Name switch
                 {
-                    "ShareVideo" => Task.FromResult(
+                    "CompleteVideoShare" => Task.FromResult(
                         new BiliApiResponse { Code = code, Message = "synthetic rejection" }
                     ),
                     "UploadVideoHeartbeat" => Task.FromResult(
@@ -101,6 +100,7 @@ public class VideoRecoveryOutcomeTests
             var video = new VideoInfoDto
             {
                 Aid = "1",
+                Cid = 10,
                 Bvid = "synthetic",
                 Title = "synthetic",
             };

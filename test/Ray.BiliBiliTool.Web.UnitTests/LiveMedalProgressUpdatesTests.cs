@@ -9,7 +9,6 @@ using Ray.BiliBiliTool.Agent.BiliBiliAgent.Interfaces;
 using Ray.BiliBiliTool.DomainService;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
 using Ray.BiliBiliTool.Web.Services;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
@@ -82,7 +81,7 @@ public class LiveMedalProgressUpdatesTests
             LiveMedalProgressUpdates.AccountKey(cookie),
             _ => throw new IOException("synthetic")
         );
-        var api = LiveTaskTestSupport.Proxy.Create<ILiveApi>(
+        var api = LiveFansMedalTaskTests.Proxy.Create<ILiveApi>(
             (method, args) =>
             {
                 if (method == "GetActivatedMedalInfo")
@@ -205,7 +204,7 @@ public class LiveMedalProgressUpdatesTests
             .Build();
         var cookies = new CookieStrFactory<BiliCookie>(config);
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var api = LiveTaskTestSupport.Proxy.Create<ILiveApi>(
+        var api = LiveFansMedalTaskTests.Proxy.Create<ILiveApi>(
             (_, _) => throw new InvalidOperationException("No API calls expected")
         );
         var reader = new LiveMedalDashboardService(

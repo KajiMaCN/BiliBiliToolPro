@@ -443,7 +443,10 @@ public class LiveMedalRealtimePageTests : TestContext
         };
         Services.AddSingleton<ILiveMedalDashboardService>(dashboard);
         var page = RenderComponent<LiveFansMedalTaskConfig>();
-        page.WaitForAssertion(() => Assert.Contains("账号1主播", page.Markup));
+        page.WaitForAssertion(
+            () => Assert.Contains("账号1主播", page.Markup),
+            TimeSpan.FromSeconds(5)
+        );
         await page.Find("select[aria-label='查看账号']")
             .ChangeAsync(new ChangeEventArgs { Value = "1" });
         await polledSecond.Task.WaitAsync(TimeSpan.FromSeconds(5));

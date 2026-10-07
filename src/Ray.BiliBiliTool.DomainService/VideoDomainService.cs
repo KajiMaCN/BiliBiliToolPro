@@ -20,10 +20,12 @@ namespace Ray.BiliBiliTool.DomainService;
 public class VideoDomainService(
     ILogger<VideoDomainService> logger,
     IOptionsMonitor<DailyTaskOptions> dailyTaskOptions,
-    IApiApi apiApi
+    IApiApi apiApi,
+    TimeProvider? clock = null
 ) : IVideoDomainService
 {
     private readonly DailyTaskOptions _dailyTaskOptions = dailyTaskOptions.CurrentValue;
+    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     private readonly Dictionary<string, int> _expDic = Config.Constants.ExpDic;
 
     /// <summary>
@@ -31,10 +33,17 @@ public class VideoDomainService(
     /// </summary>
     /// <param name="aid"></param>
     /// <returns></returns>
-    public async Task<VideoDetail> GetVideoDetail(string aid)
+    public Task<VideoDetail> GetVideoDetail(string aid) => GetVideoDetailCore(aid, null);
+
+    public Task<VideoDetail> GetVideoDetail(string aid, BiliCookie ck) =>
+        GetVideoDetailCore(aid, ck.ToString());
+
+    private async Task<VideoDetail> GetVideoDetailCore(string aid, string? cookie)
     {
-        var re = await apiApi.GetVideoDetail(aid);
-        return re.Data!;
+        var re = await apiApi.GetVideoDetail(aid, cookie);
+        if (re.Code != 0)
+            throw new BiliBusinessException($"获取视频详情失败：{re.Message}({re.Code})");
+        return re.Data ?? throw new BiliBusinessException("获取视频详情失败：B 站未返回视频信息");
     }
 
     /// <summary>
@@ -44,12 +53,15 @@ public class VideoDomainService(
     public async Task<RankingInfo> GetRandomVideoOfRanking()
     {
         var apiResponse = await apiApi.GetRegionRankingVideosV2();
-        if (apiResponse.Code != 0 || apiResponse.Data is null)
+        if (apiResponse.Code != 0)
         {
             throw new BiliBusinessException(
                 $"获取排行榜失败：{apiResponse.Message}({apiResponse.Code})"
             );
         }
+
+        if (apiResponse.Data?.List is not { Count: > 0 })
+            throw new BiliBusinessException("获取排行榜失败：B 站未返回可用视频");
 
         logger.LogDebug("获取排行榜成功");
         var data = apiResponse.Data.List[new Random().Next(apiResponse.Data.List.Count)];
@@ -75,7 +87,7 @@ public class VideoDomainService(
 
         if (re.Code != 0)
         {
-            throw new BiliBusinessException(re.Message);
+            throw new BiliBusinessException($"获取主播视频失败：{re.Message}({re.Code})");
         }
 
         return re.Data?.List?.Vlist.FirstOrDefault();
@@ -96,18 +108,23 @@ public class VideoDomainService(
         );
         if (re.Code != 0)
         {
-            throw new BiliBusinessException(re.Message);
+            throw new BiliBusinessException($"获取主播视频数量失败：{re.Message}({re.Code})");
         }
 
-        return re.Data!.Page.Count;
+        if (re.Data?.Page is null)
+            throw new BiliBusinessException("获取主播视频数量失败：B 站未返回分页信息");
+
+        return re.Data.Page.Count;
     }
 
     public async Task WatchAndShareVideo(DailyTaskInfo dailyTaskStatus, BiliCookie ck)
     {
         VideoInfoDto? targetVideo = null;
+        var needsWatch = !dailyTaskStatus.Watch && _dailyTaskOptions.IsWatchVideo;
+        var needsShare = !dailyTaskStatus.Share && _dailyTaskOptions.IsShareVideo;
 
         //至少有一项未完成，获取视频
-        if (!dailyTaskStatus.Watch || !dailyTaskStatus.Share)
+        if (needsWatch || needsShare)
         {
             targetVideo = await GetRandomVideoForWatchAndShare(ck);
             logger.LogInformation("【随机视频】{title}", targetVideo.Title);
@@ -115,7 +132,7 @@ public class VideoDomainService(
 
         bool watched = false;
         //观看
-        if (!dailyTaskStatus.Watch && _dailyTaskOptions.IsWatchVideo)
+        if (needsWatch)
         {
             await WatchVideo(targetVideo!, ck);
             watched = true;
@@ -124,7 +141,7 @@ public class VideoDomainService(
             logger.LogInformation("今天已经观看过了，不需要再看啦");
 
         //分享
-        if (!dailyTaskStatus.Share && _dailyTaskOptions.IsShareVideo)
+        if (needsShare)
         {
             //如果没有打开观看过，则分享前先打开视频
             if (!watched)
@@ -207,13 +224,26 @@ public class VideoDomainService(
     /// <param name="videoInfo">视频</param>
     public async Task ShareVideo(VideoInfoDto videoInfo, BiliCookie ck)
     {
-        var request = new ShareVideoRequest(long.Parse(videoInfo.Aid), ck.BiliJct);
-        BiliApiResponse apiResponse = await apiApi.ShareVideo(request, ck.ToString());
-
-        if (apiResponse.Code == 0)
+        var aid = long.Parse(videoInfo.Aid);
+        var cid = videoInfo.Cid;
+        if (cid <= 0)
         {
-            _expDic.TryGetValue("每日观看视频", out int exp);
-            logger.LogInformation("视频分享成功，经验+{exp} √", exp);
+            var videoDetail = await GetVideoDetail(videoInfo.Aid, ck);
+            if (videoDetail.Aid != aid || videoDetail.Cid <= 0)
+                throw new BiliBusinessException("分享视频信息不完整，请重新获取视频");
+            cid = videoDetail.Cid;
+        }
+        var request = new ShareVideoCompletionRequest(
+            aid,
+            cid,
+            ck.BiliJct,
+            _clock.GetUtcNow().ToUnixTimeSeconds()
+        );
+        BiliApiResponse apiResponse = await apiApi.CompleteVideoShare(request, ck.ToString());
+
+        if (apiResponse.Code is 0 or 71000)
+        {
+            logger.LogInformation("分享记录已提交，正在核对 B 站今日分享进度");
         }
         else
         {
@@ -225,8 +255,58 @@ public class VideoDomainService(
         TaskRecoveryProgressScope.Report(
             "video",
             "分享视频",
-            TaskRecoveryProgressState.Completed,
-            "分享记录已提交"
+            TaskRecoveryProgressState.Running,
+            "分享记录已提交，正在确认今日进度"
+        );
+        var queryFailed = false;
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (attempt > 0)
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 3), _clock);
+            try
+            {
+                var reward = await apiApi.GetDailyTaskRewardInfoAsync(ck.ToString());
+                if (reward.Code == 0 && reward.Data?.Share == true)
+                {
+                    _expDic.TryGetValue("每日分享视频", out int exp);
+                    logger.LogInformation("B 站已确认今日分享完成，经验+{exp} √", exp);
+                    TaskRecoveryProgressScope.Report(
+                        "video",
+                        "分享视频",
+                        TaskRecoveryProgressState.Completed,
+                        "B 站已确认今日分享完成"
+                    );
+                    return;
+                }
+                queryFailed = reward.Code != 0 || reward.Data is null;
+                if (queryFailed)
+                    break;
+            }
+            catch (Exception error)
+                when (error
+                        is HttpRequestException
+                            or Refit.ApiException
+                            or System.Text.Json.JsonException
+                            or TimeoutException
+                )
+            {
+                queryFailed = true;
+                logger.LogWarning(
+                    "分享进度查询未完成：{reason}",
+                    TaskRecoveryProgressScope.DescribeFailure(error)
+                );
+                break;
+            }
+        }
+        var detail = queryFailed
+            ? "分享记录已提交，今日进度暂未获取"
+            : "分享记录已提交，B 站尚未确认今日完成";
+        logger.LogInformation("{detail}", detail);
+        TaskRecoveryProgressScope.Report(
+            "video",
+            "分享视频",
+            TaskRecoveryProgressState.Pending,
+            detail
         );
     }
 
@@ -274,8 +354,23 @@ public class VideoDomainService(
     /// <returns></returns>
     public async Task<VideoInfoDto> GetRandomVideoForWatchAndShare(BiliCookie ck)
     {
-        //先从配置的或关注的up中取
-        var video = await GetRandomVideoOfFollowingUps(ck);
+        var configuredUps = _dailyTaskOptions.SupportUpIdList;
+        if (configuredUps.Count > 0)
+        {
+            var configured = await VideoSourceSelection.TryAsync(
+                () => GetRandomVideoOfUps(configuredUps, ck),
+                logger,
+                "配置主播"
+            );
+            if (configured is not null)
+                return configured;
+        }
+
+        var video = await VideoSourceSelection.TryAsync(
+            () => GetRandomVideoOfFollowingUps(ck),
+            logger,
+            "关注主播"
+        );
         if (video != null)
             return video;
 
@@ -294,22 +389,16 @@ public class VideoDomainService(
 
     private async Task<VideoInfoDto?> GetRandomVideoOfFollowingUps(BiliCookie ck)
     {
-        //配置的UpId
-        int configUpsCount = _dailyTaskOptions.SupportUpIdList.Count;
-        if (configUpsCount > 0)
-        {
-            var video = await GetRandomVideoOfUps(_dailyTaskOptions.SupportUpIdList, ck);
-            if (video != null)
-                return video;
-        }
-
         //关注列表
         var request = new GetFollowingsRequest(long.Parse(ck.UserId));
         BiliApiResponse<GetFollowingsResponse> result = await apiApi.GetFollowings(
             request,
             ck.ToString()
         );
-        if (result.Code == 0 && result.Data is not null && result.Data.Total > 0)
+        if (result.Code != 0)
+            throw new BiliBusinessException($"获取关注列表失败：{result.Message}({result.Code})");
+
+        if (result.Data is not null && result.Data.Total > 0)
         {
             var video = await GetRandomVideoOfUps(result.Data.List.Select(x => x.Mid).ToList(), ck);
             if (video != null)
@@ -326,10 +415,11 @@ public class VideoDomainService(
     /// <returns></returns>
     private async Task<VideoInfoDto?> GetRandomVideoOfUps(List<long> upIds, BiliCookie ck)
     {
-        long upId = upIds[new Random().Next(0, upIds.Count)];
-
-        if (upId == 0 || upId == long.MinValue)
+        var candidates = upIds.Where(id => id > 0).ToArray();
+        if (candidates.Length == 0)
             return null;
+
+        long upId = candidates[new Random().Next(0, candidates.Length)];
 
         int count = await GetVideoCountOfUp(upId, ck);
 

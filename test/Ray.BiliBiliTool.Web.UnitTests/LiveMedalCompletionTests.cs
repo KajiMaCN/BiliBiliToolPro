@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Config.Options;
 using Ray.BiliBiliTool.Domain;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

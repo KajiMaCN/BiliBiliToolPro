@@ -6,6 +6,8 @@ public class VideoDetail
 
     public long Aid { get; set; }
 
+    public long Cid { get; set; }
+
     /// <summary>
     /// 稿件分P总数
     /// </summary>

@@ -2,11 +2,12 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_cookieStr" Label="Cookie 字符串" Lines="5" Variant="Variant.Outlined" />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">粘贴已登录账号的完整 Cookie。</MudText>
+        <MudTextField @bind-Value="_cookieStr" Label="登录 Cookie" Lines="5" Variant="Variant.Outlined" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">取消</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(_cookieStr)">添加</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(_cookieStr)">导入账号</MudButton>
     </DialogActions>
 </MudDialog>
 

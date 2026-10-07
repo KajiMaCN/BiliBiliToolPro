@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
+using Ray.Serilog.Sinks.Compatibility;
 using Serilog;
 using Serilog.Events;
 using Xunit;

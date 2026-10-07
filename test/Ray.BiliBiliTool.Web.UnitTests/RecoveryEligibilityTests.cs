@@ -11,7 +11,6 @@ using Ray.BiliBiliTool.Domain;
 using Ray.BiliBiliTool.DomainService.Interfaces;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
 using Ray.BiliBiliTool.Infrastructure.EF;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
@@ -342,10 +341,57 @@ public class RecoveryEligibilityTests : IDisposable
         Assert.Equal(2, disposed);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AutomaticShareRecovery_RechecksCompletionAndSkipsCompletedShares(
+        bool complete
+    )
+    {
+        var account = DispatchProxy.Create<IAccountDomainService, Proxy>();
+        var reads = 0;
+        ((Proxy)account).Call = _ =>
+            Task.FromResult(new DailyTaskInfo { Share = complete || ++reads > 1 });
+        var video = DispatchProxy.Create<IVideoDomainService, Proxy>();
+        var submissions = 0;
+        ((Proxy)video).Call = method =>
+            method.Name switch
+            {
+                "GetRandomVideoForWatchAndShare" => Task.FromResult(
+                    new Ray.BiliBiliTool.DomainService.Dtos.VideoInfoDto
+                    {
+                        Aid = "1",
+                        Cid = 10,
+                        Bvid = "synthetic",
+                        Title = "synthetic",
+                    }
+                ),
+                "OpenVideo" => Task.FromResult(true),
+                "ShareVideo" => Submit(),
+                _ => throw new NotSupportedException(method.Name),
+            };
+        Task Submit()
+        {
+            submissions++;
+            return Task.CompletedTask;
+        }
+        using var services = Apps();
+        var result = await Build(services, account, video: video)
+            .RedoAsync(91001, "DailyTaskAppService", "Share", TaskRecordTrigger.Auto);
+        Assert.True(result.Success);
+        Assert.Equal(complete, result.Skipped);
+        Assert.Equal(complete ? 0 : 1, submissions);
+        using var db = _factory.CreateDbContext();
+        Assert.Equal(complete ? 0 : 1, db.TaskRecords.Count());
+        if (!complete)
+            Assert.Equal(TaskRecordTrigger.Auto, db.TaskRecords.Single().Trigger);
+    }
+
     private TodayTaskService Build(
         IServiceProvider services,
         IAccountDomainService? account = null,
         IServiceScopeFactory? scopeFactory = null,
+        IVideoDomainService? video = null,
         ICoinDomainService? coins = null,
         IDonateCoinDomainService? donate = null
     )
@@ -358,7 +404,7 @@ public class RecoveryEligibilityTests : IDisposable
             cookies,
             _config,
             account!,
-            null!,
+            video!,
             donate!,
             null!,
             services,

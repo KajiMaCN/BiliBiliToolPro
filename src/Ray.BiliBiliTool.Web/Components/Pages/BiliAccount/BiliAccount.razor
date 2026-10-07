@@ -13,17 +13,24 @@
 
 <PageTitle>账号管理</PageTitle>
 
-<PageHero Title="账号管理" Description="账号列表直接读取本地配置，打开即显示。「昵称 / 等级」需要访问 B 站，点「检测」按需获取。">
-    <Actions>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenAddDialog">添加账号</MudButton>
-        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.QrCodeScanner"
-                   OnClick="OpenQrLoginDialog">扫码登录</MudButton>
-        <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.HealthAndSafety"
-                   Disabled="@(_accounts.Count == 0 || _probingAll)"
-                   OnClick="ProbeAllAsync">检测全部账号</MudButton>
-    </Actions>
-</PageHero>
+<PageHero Title="账号管理" Description="扫码或使用账号密码登录。" />
+
+<div class="bili-account-login-actions">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Login"
+               OnClick="OpenLoginDialog">登录</MudButton>
+    <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Key"
+               OnClick="OpenAddDialog">导入 Cookie</MudButton>
+</div>
+
+<div class="bili-account-list-heading">
+    <div>
+        <MudText Typo="Typo.h6">已添加的账号</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">检测可更新账号状态、昵称和等级。</MudText>
+    </div>
+    <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.HealthAndSafety"
+               Disabled="@(_accounts.Count == 0 || _probingAll)"
+               OnClick="ProbeAllAsync">检测全部账号</MudButton>
+</div>
 
 @if (_loading)
 {
@@ -202,21 +209,28 @@ else
 
     private async Task OpenAddDialog()
     {
-        var dialog = await DialogService.ShowAsync<AddAccountDialog>("添加账号");
+        var dialog = await DialogService.ShowAsync<AddAccountDialog>("导入 Cookie");
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is string cookieStr)
         {
-            await SaveAsync("Account added", () => Workflow.AddAsync(cookieStr));
+            await SaveAsync("账号已导入", () => Workflow.AddAsync(cookieStr));
         }
     }
 
-    private async Task OpenQrLoginDialog()
+    private async Task OpenLoginDialog()
     {
-        var dialog = await DialogService.ShowAsync<QrLoginDialog>("扫码登录");
+        var dialog = await DialogService.ShowAsync<PasswordLoginDialog>(
+            "登录",
+            new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Medium, CloseOnEscapeKey = false, BackdropClick = false }
+        );
         var result = await dialog.Result;
-        if (!result.Canceled)
+        if (result is { Canceled: false, Data: string userId })
         {
             await LoadAccounts();
+            Snackbar.Add("登录状态已保存", Severity.Success);
+            var account = _accounts.FirstOrDefault(item => item.UserId == userId);
+            if (account is not null)
+                await ProbeOneAsync(account);
         }
     }
 

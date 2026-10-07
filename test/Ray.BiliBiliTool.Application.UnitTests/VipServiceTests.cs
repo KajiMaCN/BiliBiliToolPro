@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
-using Ray.BiliBiliTool.Agent;
 using Ray.BiliBiliTool.Agent.BiliBiliAgent.Dtos.ApiApi.VipBigPoint;
 using Ray.BiliBiliTool.Agent.BiliBiliAgent.Interfaces;
+using Ray.BiliBiliTool.Application.Contracts;
+using Ray.BiliBiliTool.DomainService.Dtos;
 using Ray.BiliBiliTool.Infrastructure;
-using Ray.BiliBiliTool.Infrastructure.Cookie;
 
 namespace Ray.BiliBiliTool.Application.UnitTests;
 
@@ -16,39 +16,20 @@ public class VipServiceTests
     }
 
     [Fact]
-    public async Task VipBigPointCompleteV2_ConfiguredAccount_ReturnsSuccess()
+    public async Task CompleteV2Test()
     {
-        using var scope = Assert
-            .IsAssignableFrom<IServiceProvider>(Global.ServiceProviderRoot)
-            .CreateScope();
+        using var scope = Global.ServiceProviderRoot.CreateScope();
         var api = scope.ServiceProvider.GetRequiredService<IApiApi>();
-        var res = await api.VipBigPointCompleteV2(
-            new VipPointV2TaskRequest("dress-view"),
-            GetConfiguredCookie(scope.ServiceProvider)
-        );
-        Assert.Equal(0, res.Code);
+        var res = await api.VipBigPointCompleteV2(new VipPointV2TaskRequest("dress-view"), null);
+        Assert.True(res.Code == 0);
     }
 
     [Fact]
-    public async Task VipBigPointReceiveV2_ConfiguredAccount_ReturnsSuccess()
+    public async Task ReceiveV2Test()
     {
-        using var scope = Assert
-            .IsAssignableFrom<IServiceProvider>(Global.ServiceProviderRoot)
-            .CreateScope();
+        using var scope = Global.ServiceProviderRoot.CreateScope();
         var api = scope.ServiceProvider.GetRequiredService<IApiApi>();
-        var res = await api.VipBigPointReceiveV2(
-            new VipPointV2TaskRequest("ogvwatchnew"),
-            GetConfiguredCookie(scope.ServiceProvider)
-        );
-        Assert.Equal(0, res.Code);
-    }
-
-    private static string GetConfiguredCookie(IServiceProvider services)
-    {
-        var cookies = services.GetRequiredService<CookieStrFactory<BiliCookie>>();
-        Assert.True(cookies.Count > 0, "Requires a configured BiliBili account cookie");
-        var cookie = cookies.GetCookie(0);
-        cookie.Check();
-        return cookie.ToString();
+        var res = await api.VipBigPointReceiveV2(new VipPointV2TaskRequest("ogvwatchnew"), null);
+        Assert.True(res.Code == 0);
     }
 }

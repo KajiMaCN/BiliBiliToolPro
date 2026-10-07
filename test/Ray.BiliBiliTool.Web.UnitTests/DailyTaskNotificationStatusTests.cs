@@ -8,7 +8,6 @@ using Ray.BiliBiliTool.Domain;
 using Ray.BiliBiliTool.DomainService;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
 using Ray.BiliBiliTool.Infrastructure.EF;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

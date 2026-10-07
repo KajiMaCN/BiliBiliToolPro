@@ -5,7 +5,7 @@ namespace Ray.BiliBiliTool.Web.Services;
 /// <summary>
 /// 单个检查项的状态判定。纯逻辑、无 IO。
 /// 判定优先级（自上而下，先命中先返回）：
-/// 已关闭 → 本日无需执行 → 等待执行 → 状态未知 → 已完成 → 分享特例 → 已达重试上限 → 失败 → 未执行
+/// 已关闭 → 本日无需执行 → 等待执行 → 状态未知 → 已完成 → 已达重试上限 → 失败 → 未执行
 /// </summary>
 public static class TaskStatusEvaluator
 {
@@ -59,21 +59,6 @@ public static class TaskStatusEvaluator
             return new(TodayTaskItemState.Completed, null, completedAt, ctx.AutoAttempts);
         }
 
-        // 分享特例：B站对该接口恒返回 -403「账号异常,操作失败」（已实测连续 13 天 100% 失败）。
-        // 工具明明执行过、B站却不认，重试多少次都没用，因此不消耗自动重试次数。
-        if (
-            ctx.Item.ItemKey == TaskCatalog.ShareItemKey
-            && ctx.Records.Any(r => r.Status == TaskRecordStatus.Success)
-        )
-        {
-            return new(
-                TodayTaskItemState.Failed,
-                "B站拒绝（账号异常），无法完成",
-                completedAt,
-                ctx.AutoAttempts
-            );
-        }
-
         if (ctx.AutoAttempts >= ctx.MaxAutoAttempts)
         {
             // 不再附 Message：页面上的 StateText 已经写了「已自动重试 N 次仍未完成」，
@@ -108,13 +93,10 @@ public static class TaskStatusEvaluator
 
     /// <summary>
     /// 是否允许「自动补做」。
-    /// 除了状态本身要是未执行/失败之外，分享必须排除：B 站对该接口恒返回 -403（已实测连续 13 天
-    /// 100% 失败），自动重试纯属浪费，因此只允许手动补做。
     /// </summary>
     public static bool CanAutoRedo(TodayTaskItemContext ctx, TodayTaskItemResult result) =>
         result.State is TodayTaskItemState.NotDone or TodayTaskItemState.Failed
         && !ctx.MonitorMedalLiveState
-        && ctx.Item.ItemKey != TaskCatalog.ShareItemKey
         && (
             ctx.Item.Source != TaskItemSource.LiveMedalProgress
             || ctx.FollowMedalDailyTaskLimit

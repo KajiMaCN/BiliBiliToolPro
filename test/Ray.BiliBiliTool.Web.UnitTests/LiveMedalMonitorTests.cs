@@ -4,7 +4,6 @@ using Ray.BiliBiliTool.Application.Contracts;
 using Ray.BiliBiliTool.Config.Options;
 using Ray.BiliBiliTool.Domain;
 using Ray.BiliBiliTool.Web.Services;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

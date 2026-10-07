@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
 using Ray.BiliBiliTool.Web.Extensions;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

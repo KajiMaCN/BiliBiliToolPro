@@ -18,6 +18,10 @@ WORKDIR /code
 ARG VERSION=""
 
 COPY ["Directory.Packages.props", "./"]
+COPY ["common.props", "./"]
+COPY ["NuGet.Config", "./"]
+COPY ["vendor/Ray.Serilog.Sinks/src/Ray.Serilog.Sinks.Batched/Ray.Serilog.Sinks.Batched.csproj", "vendor/Ray.Serilog.Sinks/src/Ray.Serilog.Sinks.Batched/"]
+COPY ["vendor/Ray.Serilog.Sinks/src/Ray.Serilog.Sinks.Compatibility/Ray.Serilog.Sinks.Compatibility.csproj", "vendor/Ray.Serilog.Sinks/src/Ray.Serilog.Sinks.Compatibility/"]
 COPY ["src/Ray.BiliBiliTool.Web/Ray.BiliBiliTool.Web.csproj", "src/Ray.BiliBiliTool.Web/"]
 COPY ["src/Ray.BiliBiliTool.Web.Client/Ray.BiliBiliTool.Web.Client.csproj", "src/Ray.BiliBiliTool.Web.Client/"]
 COPY ["src/Ray.BiliBiliTool.Application/Ray.BiliBiliTool.Application.csproj", "src/Ray.BiliBiliTool.Application/"]
@@ -27,7 +31,6 @@ COPY ["src/Ray.BiliBiliTool.DomainService/Ray.BiliBiliTool.DomainService.csproj"
 COPY ["src/Ray.BiliBiliTool.Config/Ray.BiliBiliTool.Config.csproj", "src/Ray.BiliBiliTool.Config/"]
 COPY ["src/Ray.BiliBiliTool.Agent/Ray.BiliBiliTool.Agent.csproj", "src/Ray.BiliBiliTool.Agent/"]
 COPY ["src/Ray.BiliBiliTool.Infrastructure/Ray.BiliBiliTool.Infrastructure.csproj", "src/Ray.BiliBiliTool.Infrastructure/"]
-COPY ["src/Ray.Serilog.Sinks.Batched/Ray.Serilog.Sinks.Batched.csproj", "src/Ray.Serilog.Sinks.Batched/"]
 COPY ["src/Ray.BiliBiliTool.Infrastructure.EF/Ray.BiliBiliTool.Infrastructure.EF.csproj", "src/Ray.BiliBiliTool.Infrastructure.EF/"]
 COPY ["src/BlazingQuartz.Core/BlazingQuartz.Core.csproj", "src/BlazingQuartz.Core/"]
 COPY ["src/BlazingQuartz.Jobs/BlazingQuartz.Jobs.csproj", "src/BlazingQuartz.Jobs/"]

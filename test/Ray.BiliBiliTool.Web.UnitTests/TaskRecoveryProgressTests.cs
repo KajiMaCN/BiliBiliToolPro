@@ -1,6 +1,5 @@
 using Ray.BiliBiliTool.Domain;
 using Ray.BiliBiliTool.Domain.Exceptions;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

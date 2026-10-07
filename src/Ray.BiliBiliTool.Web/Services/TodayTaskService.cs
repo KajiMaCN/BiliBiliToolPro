@@ -403,13 +403,7 @@ public class TodayTaskService(
         {
             if (!configuration.GetValue("AutoRecoverConfig:IsEnable", true))
                 return Skip("自动补做已关闭");
-            if (
-                item.ItemKey == TaskCatalog.ShareItemKey
-                || (
-                    item.Source == TaskItemSource.LiveMedalProgress
-                    && options.UseLiveStateMonitoring
-                )
-            )
+            if (item.Source == TaskItemSource.LiveMedalProgress && options.UseLiveStateMonitoring)
                 return Skip("此项不参与自动补做");
         }
 

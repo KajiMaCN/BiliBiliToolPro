@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Ray.BiliBiliTool.Agent;
 using Ray.BiliBiliTool.Agent.BiliBiliAgent.Dtos.NavApi;
 using Ray.BiliBiliTool.Application;
+using Ray.BiliBiliTool.Application.Contracts.Cookies;
 using Ray.BiliBiliTool.CharacterizationTests.Support;
 using Ray.BiliBiliTool.Config.Options;
 using Ray.BiliBiliTool.DomainService.Interfaces;
@@ -74,7 +75,7 @@ public class HandledFailureFlowTests
                 null!,
                 configuration,
                 new CookieStrFactory<BiliCookie>(configuration),
-                new AllowCookieTaskGuard()
+                FlowProxy.Create<ICookieTaskGuard>((_, _) => Task.CompletedTask)
             );
             await Assert.ThrowsAsync<AggregateException>(() => service.DoTaskForAccountAsync(1));
             Assert.True(read);

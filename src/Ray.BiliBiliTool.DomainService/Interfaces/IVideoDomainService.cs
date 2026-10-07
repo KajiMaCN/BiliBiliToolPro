@@ -19,6 +19,8 @@ public interface IVideoDomainService : IDomainService
     /// <returns></returns>
     Task<VideoDetail> GetVideoDetail(string aid);
 
+    Task<VideoDetail> GetVideoDetail(string aid, BiliCookie ck) => GetVideoDetail(aid);
+
     /// <summary>
     /// 从排行榜获取一个随机视频
     /// </summary>

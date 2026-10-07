@@ -7,7 +7,7 @@ using Serilog;
 using Serilog.Configuration;
 using Serilog.Events;
 
-namespace Ray.BiliBiliTool.Infrastructure.Notifications;
+namespace Ray.Serilog.Sinks.Compatibility;
 
 public class ChunkedWorkWeiXinBatchedSink : WorkWeiXinBatchedSink
 {

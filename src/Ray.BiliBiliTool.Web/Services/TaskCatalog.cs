@@ -56,7 +56,7 @@ public sealed class TaskDefinition(
 /// </summary>
 public static class TaskCatalog
 {
-    /// <summary>分享子项键（命中 B 站风控特例：该接口恒返回 -403，不参与自动补做）</summary>
+    // Share completion is confirmed by the daily reward endpoint.
     public const string ShareItemKey = "Share";
 
     public static IReadOnlyList<TaskDefinition> All { get; } =

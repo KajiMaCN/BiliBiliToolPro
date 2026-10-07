@@ -5,11 +5,10 @@ using Ray.BiliBiliTool.Agent;
 using Ray.BiliBiliTool.Application.Contracts;
 using Ray.BiliBiliTool.Application.Contracts.Cookies;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
-public class TaskRecoveryExecutorTests
+public class TaskRecoveryExecutorTestss
 {
     private class FakeAccountTaskAppService(string taskKey = "MangaTaskAppService")
         : IAccountTaskAppService

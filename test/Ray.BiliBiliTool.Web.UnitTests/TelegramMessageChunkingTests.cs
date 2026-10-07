@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
+using Ray.Serilog.Sinks.Compatibility;
 using Serilog;
 using Xunit;
 

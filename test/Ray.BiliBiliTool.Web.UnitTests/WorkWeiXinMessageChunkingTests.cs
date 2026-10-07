@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
+using Ray.Serilog.Sinks.Compatibility;
 using Ray.Serilog.Sinks.WorkWeiXinBatched;
 using Serilog;
 using Serilog.Debugging;

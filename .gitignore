@@ -388,3 +388,6 @@ src/**/BiliBiliTool.db*
 
 # agent
 .workbuddy
+
+# Local notification dependency packages
+.local-packages/

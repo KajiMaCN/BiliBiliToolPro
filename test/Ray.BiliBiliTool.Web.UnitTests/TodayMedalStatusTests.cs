@@ -11,7 +11,6 @@ using Ray.BiliBiliTool.DomainService.Interfaces;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
 using Ray.BiliBiliTool.Infrastructure.EF;
 using Ray.BiliBiliTool.Web.Services.Pages.BiliAccount;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

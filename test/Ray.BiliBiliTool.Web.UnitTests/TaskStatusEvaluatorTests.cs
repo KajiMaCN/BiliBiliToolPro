@@ -1,10 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Domain;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
-public class TaskStatusEvaluatorTest
+public class TaskStatusEvaluatorTests
 {
     private static readonly TaskDefinition DailyTask = TaskCatalog.All.First(t =>
         t.TaskKey == "DailyTaskAppService"
@@ -183,7 +182,7 @@ public class TaskStatusEvaluatorTest
     }
 
     [Fact]
-    public void 分享被B站拒绝时显示失败且不消耗自动重试()
+    public void ShareCompletion_RespectsAutomaticAttemptLimit()
     {
         var r = TaskStatusEvaluator.Evaluate(
             Ctx(
@@ -193,8 +192,8 @@ public class TaskStatusEvaluatorTest
                 records: [Rec(TaskRecordStatus.Success, null, TaskRecordTrigger.Auto)]
             )
         );
-        Assert.Equal(TodayTaskItemState.Failed, r.State);
-        Assert.Contains("B站", r.Message);
+        Assert.Equal(TodayTaskItemState.RetryExhausted, r.State);
+        Assert.Null(r.Message);
     }
 
     [Fact]
@@ -271,7 +270,7 @@ public class TaskStatusEvaluatorTest
     }
 
     [Fact]
-    public void 分享永远不自动补做_避免每天白试三次()
+    public void UnconfirmedShare_AllowsAutomaticRecoveryWithinAttemptLimit()
     {
         var ctx = Ctx(
             "Share",
@@ -281,7 +280,8 @@ public class TaskStatusEvaluatorTest
         var result = TaskStatusEvaluator.Evaluate(ctx);
 
         Assert.Equal(TodayTaskItemState.Failed, result.State);
-        Assert.False(TaskStatusEvaluator.CanAutoRedo(ctx, result));
+        Assert.True(TaskStatusEvaluator.CanAutoRedo(ctx, result));
+        Assert.Contains("未确认", result.Message);
     }
 
     [Fact]

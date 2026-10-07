@@ -9,7 +9,6 @@ using Ray.BiliBiliTool.Infrastructure.EF;
 using Ray.BiliBiliTool.Web.Extensions;
 using Ray.BiliBiliTool.Web.Jobs;
 using Ray.BiliBiliTool.Web.Services.Pages.BiliAccount;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
@@ -89,7 +88,7 @@ public class TodayTaskCatalogTests
         var factory = services.GetRequiredService<IDbContextFactory<BiliDbContext>>();
         var schedulerFactory = services.GetRequiredService<ISchedulerFactory>();
         var scheduler = await schedulerFactory.GetScheduler();
-        var clock = new LiveTaskTestSupport.BudgetClock
+        var clock = new LiveFansMedalTaskTests.BudgetClock
         {
             Now = new DateTimeOffset(2026, 10, 6, 4, 0, 0, TimeSpan.Zero),
         };

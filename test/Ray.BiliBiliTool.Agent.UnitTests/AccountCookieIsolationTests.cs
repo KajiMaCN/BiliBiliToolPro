@@ -188,6 +188,7 @@ public class AccountCookieIsolationTests
     {
         private readonly HttpListener _listener = new();
         private readonly Task _worker;
+        private volatile bool _stopping;
         public Uri Address { get; }
 
         public CookieServer()
@@ -206,7 +207,7 @@ public class AccountCookieIsolationTests
         {
             try
             {
-                while (_listener.IsListening)
+                while (!_stopping)
                 {
                     var context = await _listener.GetContextAsync();
                     if (context.Request.Url!.AbsolutePath == "/seed")
@@ -219,12 +220,13 @@ public class AccountCookieIsolationTests
                     context.Response.Close();
                 }
             }
-            catch (HttpListenerException) when (!_listener.IsListening) { }
-            catch (ObjectDisposedException) when (!_listener.IsListening) { }
+            catch (HttpListenerException) when (_stopping) { }
+            catch (ObjectDisposedException) when (_stopping) { }
         }
 
         public async ValueTask DisposeAsync()
         {
+            _stopping = true;
             _listener.Close();
             await _worker.WaitAsync(TimeSpan.FromSeconds(5));
         }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Ray.BiliBiliTool.Infrastructure.Notifications;
+using Ray.Serilog.Sinks.Compatibility;
 using Serilog;
 using Serilog.Debugging;
 

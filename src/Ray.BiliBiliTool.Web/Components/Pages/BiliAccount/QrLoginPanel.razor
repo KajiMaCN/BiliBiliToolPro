@@ -1,0 +1,157 @@
+@using Ray.BiliBiliTool.Agent
+@using Ray.BiliBiliTool.DomainService.Dtos
+@using Ray.BiliBiliTool.Web.Services.Pages.BiliAccount
+@implements IDisposable
+@inject IBiliAccountPageWorkflow Workflow
+@inject TimeProvider Clock
+
+<div class="bili-login-qr">
+    <MudText Typo="Typo.h6">扫码登录</MudText>
+    <div class="bili-login-qr-frame">
+        @if (_image is not null && _state == QrState.Waiting)
+        {
+            <img src="data:image/png;base64,@_image" alt="登录二维码" />
+        }
+        else if (_state == QrState.Generating)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudIcon Icon="@(_state == QrState.Confirmed ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.QrCodeScanner)"
+                     Color="@(_state == QrState.Confirmed ? Color.Success : Color.Default)" Size="Size.Large" />
+        }
+    </div>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary bili-login-qr-caption">用 B 站 App 扫码<br />并在手机上确认登录</MudText>
+    <MudText Typo="Typo.caption" role="status">@_message</MudText>
+    @if (Active && _state is QrState.Expired or QrState.Failed)
+    {
+        <MudButton Class="refresh-login-qr" Variant="Variant.Outlined" Color="Color.Primary" OnClick="StartAsync">刷新二维码</MudButton>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Active { get; set; } = true;
+    [Parameter] public EventCallback<BiliCookie> OnAuthenticated { get; set; }
+    private enum QrState { Generating, Waiting, Confirmed, Expired, Failed }
+    private QrState _state = QrState.Generating;
+    private string? _image;
+    private string _message = "正在生成二维码";
+    private CancellationTokenSource? _polling;
+    private bool _disposed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !Active) return;
+        await StartAsync();
+        if (!_disposed && Active) StateHasChanged();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!Active) _polling?.Cancel();
+    }
+
+    private async Task StartAsync()
+    {
+        if (_disposed || !Active) return;
+        _polling?.Cancel();
+        _polling?.Dispose();
+        var session = _polling = new();
+        var token = session.Token;
+        _image = null;
+        _state = QrState.Generating;
+        _message = "正在生成二维码";
+        try
+        {
+            var result = await Workflow.QrLoginGenerateAsync().WaitAsync(token);
+            if (!IsCurrent(session)) return;
+            if (string.IsNullOrWhiteSpace(result.QrImageBase64) || string.IsNullOrWhiteSpace(result.QrcodeKey))
+                throw new InvalidOperationException();
+            _image = result.QrImageBase64;
+            _state = QrState.Waiting;
+            _message = "等待扫码";
+            _ = PollAsync(session, result.QrcodeKey);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception)
+        {
+            if (IsCurrent(session)) { _state = QrState.Failed; _message = "二维码生成失败，请刷新二维码"; }
+        }
+    }
+
+    private bool IsCurrent(CancellationTokenSource session) => !_disposed && Active && ReferenceEquals(_polling, session) && !session.IsCancellationRequested;
+
+    private async Task PollAsync(CancellationTokenSource session, string key)
+    {
+        var token = session.Token;
+        var startedAt = Clock.GetUtcNow();
+        var failures = 0;
+        try
+        {
+            while (IsCurrent(session) && Clock.GetUtcNow() - startedAt < TimeSpan.FromMinutes(3))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), Clock, token);
+                if (!IsCurrent(session)) return;
+                QrLoginCheckResult result;
+                try { result = await Workflow.QrLoginPollAsync(key).WaitAsync(token); }
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
+                catch (Exception)
+                {
+                    if (!IsCurrent(session)) return;
+                    if (++failures < 3) continue;
+                    throw;
+                }
+                if (!IsCurrent(session)) return;
+                failures = 0;
+                switch (result.Status)
+                {
+                    case QrLoginStatus.Success when result.Cookie is not null:
+                        _state = QrState.Confirmed;
+                        _message = "手机已确认，正在保存账号";
+                        StateHasChanged();
+                        await OnAuthenticated.InvokeAsync(result.Cookie);
+                        return;
+                    case QrLoginStatus.Expired:
+                        _state = QrState.Expired;
+                        _message = "二维码已过期，请刷新二维码";
+                        StateHasChanged();
+                        return;
+                    case QrLoginStatus.Error:
+                    case QrLoginStatus.Success:
+                        throw new InvalidOperationException();
+                    default:
+                        _message = result.Message?.Contains("未确认", StringComparison.Ordinal) == true
+                            ? "已扫码，请在手机上确认登录" : "等待扫码";
+                        StateHasChanged();
+                        break;
+                }
+            }
+            if (IsCurrent(session))
+            {
+                _state = QrState.Expired;
+                _message = "二维码已过期，请刷新二维码";
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception)
+        {
+            if (IsCurrent(session))
+            {
+                _state = QrState.Failed;
+                _message = "扫码结果查询失败，请刷新二维码";
+                StateHasChanged();
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _polling?.Cancel();
+        _polling?.Dispose();
+        _image = null;
+    }
+}

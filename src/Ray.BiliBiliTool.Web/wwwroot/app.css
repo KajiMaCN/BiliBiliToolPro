@@ -437,3 +437,20 @@ body {
 
 .today-redo-row-feedback { display: block; }
 .medal-auto-update { display: inline-flex; align-items: center; gap: 4px; }
+
+.bili-account-login-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 24px 0 32px; }
+.bili-account-list-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.bili-account-login-modal { max-width: 760px; }
+.bili-login-dialog { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 32px; padding: 8px 0; }
+.bili-login-qr-column { border-right: 1px solid var(--mud-palette-lines-default); padding-right: 32px; }
+.bili-login-password-column { min-width: 0; }
+.bili-login-password-column .password-login-submit { width: 100%; }
+.bili-login-qr { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+.bili-login-qr-frame { display: flex; align-items: center; justify-content: center; position: relative; width: 200px; height: 200px; padding: 8px; border: 1px solid var(--mud-palette-lines-default); border-radius: 8px; background: #fff; }
+.bili-login-qr-frame img { width: 100%; height: 100%; }
+.bili-login-qr-caption { line-height: 1.7; }
+@media (max-width: 650px) {
+    .bili-login-dialog { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .bili-login-password-column { grid-row: 1; }
+    .bili-login-qr-column { grid-row: 2; border-right: 0; border-top: 1px solid var(--mud-palette-lines-default); padding-right: 0; padding-top: 24px; }
+}

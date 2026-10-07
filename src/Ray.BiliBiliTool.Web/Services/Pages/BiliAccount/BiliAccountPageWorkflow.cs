@@ -161,6 +161,22 @@ public class BiliAccountPageWorkflow(
         await AddAsync(enriched.CookieStr);
     }
 
+    public async Task PasswordLoginCompleteAsync(
+        BiliCookie rawCookie,
+        CancellationToken cancellationToken = default
+    )
+    {
+        rawCookie.Check();
+        var enriched = await loginDomainService.SetCookieAsync(rawCookie, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        var cookies = _configurationRoot.GetSection("BiliBiliCookies").Get<List<string>>() ?? [];
+        var index = cookies.FindIndex(value => ParseUserId(value) == enriched.UserId);
+        if (index >= 0)
+            await UpdateAsync(index, enriched.CookieStr);
+        else
+            await AddAsync(enriched.CookieStr);
+    }
+
     private async Task CheckSavedCookieAsync(string cookie)
     {
         if (

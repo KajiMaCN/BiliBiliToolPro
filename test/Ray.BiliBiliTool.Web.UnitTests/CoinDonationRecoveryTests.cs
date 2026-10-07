@@ -7,7 +7,6 @@ using Ray.BiliBiliTool.Agent.BiliBiliAgent.Dtos.NavApi;
 using Ray.BiliBiliTool.Application.Contracts.Cookies;
 using Ray.BiliBiliTool.DomainService.Interfaces;
 using Ray.BiliBiliTool.Infrastructure.Cookie;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

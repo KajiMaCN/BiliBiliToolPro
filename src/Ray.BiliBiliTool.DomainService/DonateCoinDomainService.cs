@@ -130,17 +130,29 @@ public class DonateCoinDomainService(
         UpVideoInfo? result;
 
         //从配置的up中随机尝试获取1次
-        result = await TryGetCanDonateVideoByConfigUps(1, ck);
+        result = await VideoSourceSelection.TryAsync(
+            () => TryGetCanDonateVideoByConfigUps(1, ck),
+            logger,
+            "配置主播"
+        );
         if (result != null)
             return result;
 
         //然后从特别关注列表尝试获取1次
-        result = await TryGetCanDonateVideoBySpecialUps(1, ck);
+        result = await VideoSourceSelection.TryAsync(
+            () => TryGetCanDonateVideoBySpecialUps(1, ck),
+            logger,
+            "特别关注主播"
+        );
         if (result != null)
             return result;
 
         //然后从普通关注列表获取1次
-        result = await TryGetCanDonateVideoByFollowingUps(1, ck);
+        result = await VideoSourceSelection.TryAsync(
+            () => TryGetCanDonateVideoByFollowingUps(1, ck),
+            logger,
+            "关注主播"
+        );
         if (result != null)
             return result;
 
@@ -262,6 +274,15 @@ public class DonateCoinDomainService(
             request,
             ck.ToString()
         );
+        if (specials.Code != 0)
+        {
+            logger.LogWarning(
+                "获取特别关注列表失败：{message}({code})",
+                specials.Message,
+                specials.Code
+            );
+            return null;
+        }
         if (specials.Data == null || specials.Data.Count == 0)
             return null;
 
@@ -324,7 +345,7 @@ public class DonateCoinDomainService(
                 };
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             //ignore
             logger.LogWarning("异常：{msg}", e);
@@ -387,7 +408,7 @@ public class DonateCoinDomainService(
                 return videoInfo;
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             //ignore
             logger.LogWarning("异常：{msg}", e);
@@ -434,14 +455,14 @@ public class DonateCoinDomainService(
 
             //获取该视频可投币数量
             int limitCoinNum =
-                (await videoDomainService.GetVideoDetail(aid)).Copyright == 1
+                (await videoDomainService.GetVideoDetail(aid, ck)).Copyright == 1
                     ? 2 //原创，最多可投2枚
                     : 1; //转载，最多可投1枚
             logger.LogDebug("该视频的最大投币数为{num}", limitCoinNum);
 
             return multiply < limitCoinNum;
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             //ignore
             logger.LogWarning("异常：{mag}", e);

@@ -6,7 +6,6 @@ using Ray.BiliBiliTool.Application.Contracts;
 using Ray.BiliBiliTool.Web.Extensions;
 using Ray.BiliBiliTool.Web.Jobs;
 using Ray.BiliBiliTool.Web.Services;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 

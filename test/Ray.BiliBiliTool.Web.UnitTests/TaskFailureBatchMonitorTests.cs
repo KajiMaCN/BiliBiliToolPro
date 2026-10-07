@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Ray.BiliBiliTool.Application.Contracts.Notifications;
-using Xunit;
 
 namespace Ray.BiliBiliTool.Web.UnitTests;
 
